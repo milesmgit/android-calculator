@@ -6,6 +6,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.util.Locale;
@@ -24,6 +25,10 @@ public class MainActivity extends AppCompatActivity {
     private Double operand1 = null;
     private Double operand2 = null;
     private String pendingOperation = null;
+    private Boolean negButton = false;
+
+    private static final String STATE_PENDING_OPERATION = "PendingOperation";
+    private static final String STATE_OPERAND1 = "Operand1";
 
 
     @Override
@@ -58,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
         Button buttonMultiply = findViewById(R.id.buttonMultiply);
         Button buttonMinus = findViewById(R.id.buttonMinus);
         Button buttonPlus = findViewById(R.id.buttonPlus);
+        Button buttonNeg = findViewById(R.id.buttonNeg);
 
         // storing buttons in an array for later use (use 1, assigning event listeners to the buttons)
         Button[] operationButtonArray = {buttonEquals, buttonMultiply, buttonDivide, buttonPlus, buttonMinus};
@@ -72,12 +78,63 @@ public class MainActivity extends AppCompatActivity {
                 that we know has text, in this case a Button, since we know that we are going to attach the event listener to Buttons only.  */
             public void onClick(View view) {
                 Button b = (Button) view;
-                if(newNumber.getText().toString().equals("Enter Number")  || newNumber.getText().toString().equals("Cannot Divide by Zero")) {
+                if(newNumber.getText().toString().equals("Cannot Divide by Zero")) {
                     newNumber.setText("");
                 }
                 newNumber.append(b.getText().toString());
             }
         };
+
+
+
+        // creating onClickListener for NEG button
+        View.OnClickListener negListener = new View.OnClickListener() {
+            @Override
+
+            /* this method takes a view as an argument, casts it to a Button object named b,
+                appends the text toString of that Button object to the newNumber EditText widget.
+                Not all widgets have a text field, so we are casting the view/widget to a widget/view
+                that we know has text, in this case a Button, since we know that we are going to attach the event listener to Buttons only.  */
+            public void onClick(View view) {
+               if(result.getText().toString().equals("")  && newNumber.getText().toString().equals("")){
+                   return;
+               }
+                negButton = true;
+                if (operand1 == null) {
+                    try {
+                        operand1 = Double.valueOf(newNumber.getText().toString());
+                        if (negButton) {
+                            operand1 *= -1;
+                            String op1 = operand1.toString();
+                            result.setText(op1);
+                            newNumber.setText("");
+                            negButton = false;
+                        }
+                    } catch (NumberFormatException e) {
+                        return;
+                    }
+
+                }
+                else {
+                    if(newNumber.getText().toString().equals("")){
+                        return;
+                    }
+                    try {
+                        operand2 = Double.valueOf(newNumber.getText().toString());
+                        if (negButton) {
+                            operand2 *= -1;
+                            String op2 = operand2.toString();
+                            newNumber.setText(op2);
+                            negButton = false;
+                        }
+                    } catch (NumberFormatException e) {
+                        return;
+                    }
+                }
+            }
+        };
+
+        buttonNeg.setOnClickListener(negListener);
 
 
         // adding the OnClickListener listener to the 1-9 and Dot Buttons.
@@ -138,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
 
         private void performCalculation(){
         // need to get value of operand2
-            if(newNumber.getText().toString().equals("Cannot Divide by Zero")){
+            if(newNumber.getText().toString().equals("Cannot Divide by Zero") || pendingOperation == null){
                 return;
             }
             operand2 = Double.valueOf(newNumber.getText().toString());
@@ -176,12 +233,12 @@ public class MainActivity extends AppCompatActivity {
 
 
         private void setCalculation(String value){
-            String enterNumber = "Enter Number";
             if(value != null){
                 if (operand1 == null) {
                     operand1 = Double.valueOf(value);
+
                     result.setText(String.format(Locale.US, "%.8f", operand1));
-                    newNumber.setText(enterNumber);
+                    newNumber.setText("");
                 }
                 else {
                         operand2 = Double.valueOf(value);
@@ -193,11 +250,21 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+    @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        outState.putString(STATE_PENDING_OPERATION, pendingOperation);
+        if(operand1 != null) {
+            outState.putDouble(STATE_OPERAND1, operand1);
+        }
+        super.onSaveInstanceState(outState);
+    }
 
-
-
-
-
-
-
+    @Override
+    protected void onRestoreInstanceState(@NonNull Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        pendingOperation = savedInstanceState.getString(STATE_PENDING_OPERATION);
+        operand1 = savedInstanceState.getDouble(STATE_OPERAND1);
+        displayOperation.setText(pendingOperation);
+    }
 }
+
